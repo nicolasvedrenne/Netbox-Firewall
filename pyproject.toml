@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netbox-firewall"
+version = "0.1.0"
+description = "Declarative firewall policy and non-destructive drift detection for NetBox"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+dependencies = ["requests>=2.32.5,<3"]
+classifiers = ["Framework :: Django", "Programming Language :: Python :: 3 :: Only"]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10", "pytest-django>=4.10,<5", "pytest-cov>=6,<8"]
+dev = ["ruff", "mypy", "types-requests", "build", "twine", "pip-audit", "bandit"]
+
+[tool.setuptools.packages.find]
+include = ["netbox_firewall*"]
+
+[tool.setuptools.package-data]
+netbox_firewall = ["templates/**/*.html"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["netbox: requires a configured NetBox instance"]
+
+[tool.mypy]
+files = ["netbox_firewall/domain.py", "netbox_firewall/drivers", "netbox_firewall/security.py", "netbox_firewall/reconciliation/planner.py"]
+follow_imports = "silent"
+strict = true

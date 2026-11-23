@@ -1,0 +1,13 @@
+<section class="card">
+  <h2 class="card-header">Firewall policies</h2>
+  <ul class="list-group list-group-flush">
+    {% for row in rows %}
+    <li class="list-group-item">
+      <a href="{{ row.policy.get_absolute_url }}">{{ row.policy }}</a>
+      <span class="ms-2">{{ row.side }} · {{ row.selector }} · {{ row.addresses|join:", " }}</span>
+      {% if row.approved %}<span class="ms-2">Approved resolution</span>{% endif %}
+      {% if row.state %}<span class="ms-2">{{ row.state }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>

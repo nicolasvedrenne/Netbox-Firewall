@@ -1,0 +1,39 @@
+name: Check dependency auto-merge eligibility
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+permissions: {}
+jobs:
+  enable:
+    if: github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # Base-context metadata only. No pull request checkout or execution.
+      - uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2.5.0
+        id: metadata
+        with:
+          github-token: ${{ github.token }}
+      - if: steps.metadata.outputs.update-type == 'version-update:semver-patch' && steps.metadata.outputs.dependency-names == 'requests'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          for attempt in $(seq 1 50); do
+            status=$(gh pr checks "$PR_URL" --json name,bucket --jq '[.[] | select(.name == "required" or .name == "CI / required") | .bucket] | first // ""' || true)
+            if [[ "$status" == pass ]]; then
+              gh pr merge --auto --squash --match-head-commit "$HEAD_SHA" "$PR_URL"
+              exit
+            fi
+            if [[ "$status" == fail || "$status" == cancel ]]; then
+              echo "Required CI failed. The update needs review."
+              exit 1
+            fi
+            sleep 20
+          done
+          echo "Required CI did not finish before the auto-merge deadline."
+          exit 1

@@ -1,0 +1,84 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -e '.[test,dev]'
+      - run: ruff format --check . && ruff check . && mypy
+      - run: pytest tests/unit tests/drivers --cov=netbox_firewall --cov-report=term-missing
+      - run: bandit -r netbox_firewall
+      - run: python -m build && twine check --strict dist/*
+      - run: python -m pip install --report /tmp/runtime.json --target /tmp/audited dist/*.whl && pip-audit --path /tmp/audited
+      - name: Secret detection
+        run: |
+          GOBIN="$RUNNER_TEMP/bin" go install github.com/zricethezav/gitleaks/v8@v8.30.0
+          "$RUNNER_TEMP/bin/gitleaks" git --redact --no-banner
+
+  integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        netbox: ['4.5.0', '4.7.5']
+        python: ['3.12', '3.14']
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: netbox-integration
+          POSTGRES_DB: netbox
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      NB_TEST_DB_PASSWORD: netbox-integration
+      NETBOX_CONFIGURATION: netbox_configuration
+      DJANGO_SETTINGS_MODULE: netbox.settings
+      NETBOX_VERSION: ${{ matrix.netbox }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: |
+          mkdir "$RUNNER_TEMP/netbox"
+          curl --fail --silent --show-error --location "https://codeload.github.com/netbox-community/netbox/tar.gz/refs/tags/v$NETBOX_VERSION" | tar xz -C "$RUNNER_TEMP/netbox" --strip-components=1
+          sed 's/psycopg\[c,pool\]/psycopg[binary,pool]/' "$RUNNER_TEMP/netbox/requirements.txt" > "$RUNNER_TEMP/requirements.txt"
+          python -m pip install -r "$RUNNER_TEMP/requirements.txt" -e '.[test]'
+          echo "PYTHONPATH=$RUNNER_TEMP/netbox/netbox:$GITHUB_WORKSPACE/tests" >> "$GITHUB_ENV"
+          echo "NETBOX_ROOT=$RUNNER_TEMP/netbox" >> "$GITHUB_ENV"
+      - run: python "$NETBOX_ROOT/netbox/manage.py" check
+      - run: python "$NETBOX_ROOT/netbox/manage.py" migrate --noinput
+      - run: python "$NETBOX_ROOT/netbox/manage.py" makemigrations netbox_firewall --check --dry-run
+      - run: pytest tests/integration -q
+
+  required:
+    if: always()
+    needs: [quality, integration]
+    runs-on: ubuntu-latest
+    env:
+      QUALITY: ${{ needs.quality.result }}
+      INTEGRATION: ${{ needs.integration.result }}
+    steps:
+      - run: test "$QUALITY" = success && test "$INTEGRATION" = success

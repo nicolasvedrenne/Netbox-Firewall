@@ -1,0 +1,58 @@
+name: Upstream compatibility
+on:
+  schedule:
+    - cron: '47 3 * * 2'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  latest:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: netbox-integration
+          POSTGRES_DB: netbox
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    env:
+      NB_TEST_DB_PASSWORD: netbox-integration
+      NETBOX_CONFIGURATION: netbox_configuration
+      DJANGO_SETTINGS_MODULE: netbox.settings
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh api repos/netbox-community/netbox/releases/latest --jq .tag_name)
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          mkdir "$RUNNER_TEMP/netbox"
+          curl --fail --silent --show-error --location "https://codeload.github.com/netbox-community/netbox/tar.gz/refs/tags/$tag" | tar xz -C "$RUNNER_TEMP/netbox" --strip-components=1
+      - run: |
+          sed 's/psycopg\[c,pool\]/psycopg[binary,pool]/' "$RUNNER_TEMP/netbox/requirements.txt" > "$RUNNER_TEMP/requirements.txt"
+          pip install -r "$RUNNER_TEMP/requirements.txt" -e '.[test]'
+          echo "PYTHONPATH=$RUNNER_TEMP/netbox/netbox:$GITHUB_WORKSPACE/tests" >> "$GITHUB_ENV"
+          echo "NETBOX_ROOT=$RUNNER_TEMP/netbox" >> "$GITHUB_ENV"
+      - run: python "$NETBOX_ROOT/netbox/manage.py" check
+      - run: python "$NETBOX_ROOT/netbox/manage.py" makemigrations netbox_firewall --check --dry-run
+      - run: pytest tests/integration -q
+
+  advisory-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - run: pip install -e . pip-audit && pip-audit

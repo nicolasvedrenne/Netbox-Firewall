@@ -1,0 +1,22 @@
+{% extends 'generic/object.html' %}
+
+{% block content %}
+<div class="card">
+  <h2 class="card-header">{{ object }}</h2>
+  <dl class="card-body">
+    {% for label, value in details %}
+    <dt>{{ label }}</dt>
+    <dd><div class="text-break" style="white-space: pre-wrap">{{ value }}</div></dd>
+    {% endfor %}
+  </dl>
+</div>
+{% for operation, label in actions %}
+<form method="post" action="{{ request.path }}action/{{ operation }}/" class="my-2">
+  {% csrf_token %}
+  <input type="hidden" name="revision" value="{{ revision }}">
+  {{ exception_form.as_p }}
+  {{ review_form.as_p }}
+  <button type="submit" class="btn btn-outline-primary">{{ label }}</button>
+</form>
+{% endfor %}
+{% endblock %}

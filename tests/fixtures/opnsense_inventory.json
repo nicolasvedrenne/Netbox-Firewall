@@ -1,0 +1,30 @@
+{
+  "filter/searchRule": {
+    "total": 2, "rowCount": 2, "current": 1,
+    "rows": [
+      {"uuid": "10000000-0000-4000-8000-000000000001", "enabled": "1",
+       "interface": "lan", "action": "pass", "direction": "in", "quick": "1", "log": "1",
+       "source_net": "nbs_aaaaaaaaaaaaaaaaaaaaaaaaaa", "source_port": "",
+       "destination_net": "nbd_aaaaaaaaaaaaaaaaaaaaaaaaaa", "destination_port": "443",
+       "description": "nbfw:20000000-0000-4000-8000-000000000001:rule",
+       "ipprotocol": "inet", "protocol": "TCP", "sequence": "1000",
+       "source_not": "0", "destination_not": "0", "interfacenot": "0",
+       "received-on-not": "0", "received-on": "", "allowopts": "0",
+       "gateway": "", "replyto": "", "sched": "", "tag": "", "tagged": "",
+       "overload": "", "statetype": "keep", "sort_order": "400000.001000"},
+      {"legacy": true, "is_automatic": true, "uuid": "", "description": "Default deny"}
+    ]
+  },
+  "alias/searchItem": {
+    "total": 2, "rowCount": 2, "current": 1,
+    "rows": [
+      {"uuid": "10000000-0000-4000-8000-000000000002", "enabled": "1",
+       "name": "nbs_aaaaaaaaaaaaaaaaaaaaaaaaaa", "type": "network",
+       "description": "nbfw:20000000-0000-4000-8000-000000000001:s", "content": "192.0.2.0/24"},
+      {"uuid": "10000000-0000-4000-8000-000000000003", "enabled": "1",
+       "name": "nbd_aaaaaaaaaaaaaaaaaaaaaaaaaa", "type": "network",
+       "description": "nbfw:20000000-0000-4000-8000-000000000001:d", "content": "198.51.100.20/32"}
+    ]
+  },
+  "filter/getInterfaceList": {"interfaces": {"items": [{"type": "interface", "value": "lan"}]}}
+}
