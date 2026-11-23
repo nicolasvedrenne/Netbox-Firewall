@@ -14,8 +14,9 @@ PLUGINS_CONFIG = {
     "netbox_firewall": {
         "audit_interval": 5,
         "endpoints": {
-            "https://192.0.2.10": {
+            "https://firewall.example": {
                 "driver": "opnsense",
+                "connect_networks": ["192.0.2.0/24"],
                 "ca_bundle": "/etc/netbox/firewall-ca.pem",
                 "read_key_env": "NB_LAB_READ_KEY",
                 "read_secret_env": "NB_LAB_READ_SECRET",
@@ -27,7 +28,7 @@ PLUGINS_CONFIG = {
 }
 ```
 
-Use canonical IP origins, with brackets for IPv6 and an explicit port for non-default HTTPS. The certificate must include the IP in the subject alternative name. The application uses no DNS resolution for these origins, ignores environment proxy configuration and rejects redirects. Restrict worker egress to configured endpoints. Grant the OPNsense read account the permissions needed for filter/rule and alias inventory, and interface listing. Confirm the actual 26.7.9 ACL grouping before issuing keys. Where a single appliance ACL couples reads and changes, treat the audit credential as privileged and enforce method restrictions at a trusted management gateway if needed.
+Use a canonical HTTPS origin with an explicit port for non-default HTTPS. For a DNS origin, set `connect_networks` to the management CIDRs. The worker resolves the exact allowlisted name once per job. It rejects the lookup if any answer falls outside those CIDRs and pins a validated address for the job. A change to the selected address requires a fresh audit and write activation. You can use `connect_ip` instead to specify a fixed address for a DNS origin. The worker checks the certificate against the DNS name in both modes. For an IP origin, use brackets for IPv6 and a certificate with the IP in its subject alternative name. The worker ignores environment proxies and rejects redirects. On NixOS, use `/etc/ssl/certs/ca-certificates.crt` as `ca_bundle` to include CA roots configured in `security.pki.certificateFiles`. Restrict worker egress to configured endpoints. Grant the OPNsense read account the permissions needed for filter/rule and alias inventory, and interface listing. Confirm the actual 26.7.9 ACL grouping before issuing keys. Where a single appliance ACL couples reads and changes, treat the audit credential as privileged and enforce method restrictions at a trusted management gateway if needed.
 
 ## Configure an enforcement scope
 

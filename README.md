@@ -14,7 +14,7 @@ See the [NetBox dependency matrix](https://github.com/netbox-community/netbox/bl
 ## Quick start
 
 1. Install the wheel in NetBox's Python environment and add `netbox_firewall` to `PLUGINS`.
-2. Configure an exact allowlisted HTTPS IP origin and read-only OPNsense credentials. Run NetBox migrations and restart the web service and worker.
+2. Configure an exact allowlisted HTTPS origin and read-only OPNsense credentials. Run NetBox migrations and restart the web service and worker.
 3. Add the appliance under **Firewall → Firewalls** and queue an audit. Review the rule baseline and API coverage.
 4. Define an internal enforcement scope and two address groups. For example, select a source network with `{"networks":["192.0.2.0/24"]}` and destinations with `{"tags":["fw-web"],"service_ip_tag":"fw-service"}`.
 5. Create a policy using the HTTPS service. Open it, inspect the resolved rule and member identities, and approve the revision.

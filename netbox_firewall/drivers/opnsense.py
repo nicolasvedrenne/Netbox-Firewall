@@ -484,7 +484,12 @@ def factory(endpoint: str, config: Mapping[str, object], write: bool) -> Firewal
     ):
         raise DriverError("OPNsense credential or firmware configuration is invalid.")
     return OPNsenseDriver(
-        HTTPSClient(endpoint, auth=HTTPBasicAuth(secret(key), secret(password)), ca_bundle=ca),
+        HTTPSClient(
+            endpoint,
+            auth=HTTPBasicAuth(secret(key), secret(password)),
+            ca_bundle=ca,
+            connect_ip=config.get("connect_ip"),
+        ),
         writes=write,
         exclusive=config.get("exclusive_aliases") is True,
     )

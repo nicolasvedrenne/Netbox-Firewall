@@ -27,6 +27,7 @@ from ..runtime import (
     connection_config,
     connection_profile,
     connection_revision,
+    worker_connection_config,
 )
 from .events import record, unmanaged
 from .planner import Finding, Mapping, compare, make_plan
@@ -201,10 +202,11 @@ def inventory_revision(inventory):
 
 def synchronize(firewall, *, deploy=False, plan_only=False, actor=None):
     entry = connection_config(firewall)
-    read = driver_for(firewall.driver, firewall.endpoint, entry, False)
+    driver_entry, resolved_ip = worker_connection_config(firewall, entry)
+    read = driver_for(firewall.driver, firewall.endpoint, driver_entry, False)
     try:
         inventory = read.inventory()
-        revision = connection_revision(firewall, read, entry)
+        revision = connection_revision(firewall, read, entry, resolved_ip=resolved_ip)
         operations, mappings, identities, findings = scan(
             firewall, read, inventory, revision, connection_profile(firewall, entry)
         )
@@ -245,7 +247,7 @@ def synchronize(firewall, *, deploy=False, plan_only=False, actor=None):
         return run
     write = None
     try:
-        write = driver_for(firewall.driver, firewall.endpoint, entry, True)
+        write = driver_for(firewall.driver, firewall.endpoint, driver_entry, True)
         # Audit and write credentials must see the same objects and interface lists.
         writable = write.inventory()
         if (

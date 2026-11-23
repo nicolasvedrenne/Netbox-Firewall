@@ -1,6 +1,6 @@
 # Firewall driver development
 
-Implement the typed [FirewallDriver interface](../netbox_firewall/drivers/base.py) and register an installed Python package factory under `netbox_firewall.drivers`. The factory takes the validated HTTPS origin, administrator-controlled configuration mapping and a read/write session flag.
+Implement the typed [FirewallDriver interface](../netbox_firewall/drivers/base.py) and register an installed Python package factory under `netbox_firewall.drivers`. The factory takes the validated HTTPS origin, administrator-controlled configuration mapping and a read/write session flag. For a DNS origin, the worker supplies a resolved and validated `connect_ip` to the read and write sessions.
 
 ```toml
 [project.entry-points."netbox_firewall.drivers"]

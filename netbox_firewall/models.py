@@ -56,7 +56,7 @@ class Firewall(JobsMixin, NetBoxModel):
     def clean(self):
         super().clean()
         try:
-            self.endpoint = checked_origin(self.endpoint)
+            self.endpoint = checked_origin(self.endpoint, allow_hostname=True)
         except DriverError as exc:
             raise ValidationError({"endpoint": str(exc)}) from None
         if self.device_id and self.virtual_machine_id:
