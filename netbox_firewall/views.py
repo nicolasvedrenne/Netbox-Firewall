@@ -121,7 +121,7 @@ class Detail(Authenticated, generic.ObjectView):
     template_name = "netbox_firewall/detail.html"
 
     def get_extra_context(self, request, instance):
-        context = {"details": [], "actions": []}
+        context = {"details": [], "firewall_actions": []}
         if isinstance(instance, models.Firewall):
             context["details"] = [
                 ("Status", instance.last_status),
@@ -132,17 +132,17 @@ class Detail(Authenticated, generic.ObjectView):
                 ("Enforcement scopes", pretty(instance.scopes)),
             ]
             if visible(request.user, instance, "synchronize"):
-                context["actions"] += [
+                context["firewall_actions"] += [
                     ("audit", "Queue audit"),
                     ("plan", "Queue read-only plan"),
                 ]
                 if instance.deployment_enabled:
-                    context["actions"].append(("deploy", "Queue deployment"))
+                    context["firewall_actions"].append(("deploy", "Queue deployment"))
             if visible(request.user, instance, "activate_deployment"):
                 if instance.deployment_enabled:
-                    context["actions"].append(("disable", "Disable deployment"))
+                    context["firewall_actions"].append(("disable", "Disable deployment"))
                 else:
-                    context["actions"].append(
+                    context["firewall_actions"].append(
                         ("activate", "Activate deployment in configured window")
                     )
         elif isinstance(instance, models.FirewallPolicy):
@@ -169,7 +169,9 @@ class Detail(Authenticated, generic.ObjectView):
                     and instance.deploy
                     and visible(request.user, instance, "approve")
                 ):
-                    context["actions"].append(("approve", "Approve this resolved revision"))
+                    context["firewall_actions"].append(
+                        ("approve", "Approve this resolved revision")
+                    )
             except PolicyError as exc:
                 context["details"].append(("Validation", str(exc)))
         elif isinstance(instance, models.DriftEvent):
@@ -189,7 +191,7 @@ class Detail(Authenticated, generic.ObjectView):
                 if may_acknowledge(request.user, instance):
                     context["exception_form"] = forms.ExceptionForm()
                     context["revision"] = instance.details["fingerprint"]
-                    context["actions"].append(("acknowledge", "Acknowledge exception"))
+                    context["firewall_actions"].append(("acknowledge", "Acknowledge exception"))
         elif isinstance(instance, models.ManagedResource):
             policy = (
                 models.FirewallPolicy.objects.restrict(request.user)
@@ -219,7 +221,7 @@ class Detail(Authenticated, generic.ObjectView):
                 request.user, instance.firewall, "activate_deployment"
             ):
                 context["review_form"] = forms.ReviewForm()
-                context["actions"].append(("review", "Record manual recovery"))
+                context["firewall_actions"].append(("review", "Record manual recovery"))
         else:
             context["details"] = [
                 (field.verbose_name, getattr(instance, field.name))

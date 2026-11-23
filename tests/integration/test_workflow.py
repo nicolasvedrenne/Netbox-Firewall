@@ -330,6 +330,9 @@ def test_authorized_operator_and_redis_audit_job(
     operator = django_user_model.objects.create_user(username="firewall-operator")
     permit(operator, Firewall, "view", "activate_deployment", "synchronize")
     client.force_login(operator)
+    detail = client.get(policy.fw.get_absolute_url())
+    assert detail.status_code == 200
+    assert b"Queue audit" in detail.content
     with django_capture_on_commit_callbacks(execute=True):
         job = AuditJob.enqueue_once(instance=policy.fw, user=operator, queue_name="default")
     redis_job = django_rq.get_queue("default").fetch_job(str(job.job_id))

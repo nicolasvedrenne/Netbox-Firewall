@@ -10,7 +10,7 @@
     {% endfor %}
   </dl>
 </div>
-{% for operation, label in actions %}
+{% for operation, label in firewall_actions %}
 <form method="post" action="{{ request.path }}action/{{ operation }}/" class="my-2">
   {% csrf_token %}
   <input type="hidden" name="revision" value="{{ revision }}">
