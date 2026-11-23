@@ -1,6 +1,6 @@
 import django_tables2 as tables
 from django.urls import path
-from netbox.tables import NetBoxTable
+from netbox.tables import NetBoxTable, columns
 from netbox.views.generic import ObjectChangeLogView
 
 from . import forms, models, views
@@ -31,9 +31,18 @@ COLUMNS = {
 }
 
 
-def table_for(model):
+def table_for(model, *, editable, deletable):
     fields = COLUMNS[model]
-    attrs = {fields[0]: tables.Column(linkify=lambda record: record.get_absolute_url())}
+    actions = []
+    if editable:
+        actions.append("edit")
+    if deletable:
+        actions.append("delete")
+    actions.append("changelog")
+    attrs = {
+        fields[0]: tables.Column(linkify=lambda record: record.get_absolute_url()),
+        "actions": columns.ActionsColumn(actions=actions),
+    }
     attrs["Meta"] = type(
         "Meta",
         (NetBoxTable.Meta,),
@@ -50,12 +59,14 @@ urlpatterns = []
 for model, segment, form, table in PAGES:
     label = model._meta.model_name
     query = model.objects.all()
+    editable = form is not None
+    deletable = model is models.FirewallPolicy
     list_view = (
         views.FirewallList.as_view()
         if model is models.Firewall
         else views.ObjectList.as_view(
             queryset=query,
-            table=table or table_for(model),
+            table=table or table_for(model, editable=editable, deletable=deletable),
             filterset=views.DriftFilterSet if model is models.DriftEvent else None,
             filterset_form=forms.DriftFilterForm if model is models.DriftEvent else None,
         )
@@ -81,7 +92,7 @@ for model, segment, form, table in PAGES:
                 name=f"{label}_action",
             )
         )
-    if form is not None:
+    if editable:
         edit = (
             views.ConnectionEdit.as_view()
             if model is models.Firewall
@@ -93,7 +104,7 @@ for model, segment, form, table in PAGES:
                 path(f"{segment}/<int:pk>/edit/", edit, name=f"{label}_edit"),
             ]
         )
-    if model is models.FirewallPolicy:
+    if deletable:
         urlpatterns.append(
             path(
                 f"{segment}/<int:pk>/delete/",

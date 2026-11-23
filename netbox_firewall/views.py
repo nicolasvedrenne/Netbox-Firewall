@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from netbox.filtersets import NetBoxModelFilterSet
-from netbox.tables import NetBoxTable
+from netbox.tables import NetBoxTable, columns
 from netbox.views import generic
 
 from . import forms, models
@@ -59,6 +59,7 @@ class ObjectDelete(Authenticated, generic.ObjectDeleteView):
 
 class FirewallTable(NetBoxTable):
     name = tables.Column(linkify=True)
+    actions = columns.ActionsColumn(actions=("edit", "changelog"))
     outstanding = tables.Column()
     expired = tables.Column()
     deployment_errors = tables.Column()
