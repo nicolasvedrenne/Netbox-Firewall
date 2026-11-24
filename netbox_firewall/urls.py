@@ -60,7 +60,7 @@ for model, segment, form, table in PAGES:
     label = model._meta.model_name
     query = model.objects.all()
     editable = form is not None
-    deletable = model is models.FirewallPolicy
+    deletable = model in {models.Firewall, models.FirewallPolicy}
     list_view = (
         views.FirewallList.as_view()
         if model is models.Firewall
@@ -104,7 +104,7 @@ for model, segment, form, table in PAGES:
                 path(f"{segment}/<int:pk>/edit/", edit, name=f"{label}_edit"),
             ]
         )
-    if deletable:
+    if model in {models.Firewall, models.FirewallPolicy}:
         urlpatterns.append(
             path(
                 f"{segment}/<int:pk>/delete/",

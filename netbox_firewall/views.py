@@ -59,7 +59,7 @@ class ObjectDelete(Authenticated, generic.ObjectDeleteView):
 
 class FirewallTable(NetBoxTable):
     name = tables.Column(linkify=True)
-    actions = columns.ActionsColumn(actions=("edit", "changelog"))
+    actions = columns.ActionsColumn(actions=("edit", "delete", "changelog"))
     outstanding = tables.Column()
     expired = tables.Column()
     deployment_errors = tables.Column()
@@ -126,6 +126,7 @@ class Detail(Authenticated, generic.ObjectView):
         if isinstance(instance, models.Firewall):
             context["details"] = [
                 ("Status", instance.last_status),
+                ("Last synchronization error", instance.last_error or "—"),
                 ("Last successful audit", instance.last_success),
                 ("Coverage", instance.coverage),
                 ("Endpoint", instance.endpoint),

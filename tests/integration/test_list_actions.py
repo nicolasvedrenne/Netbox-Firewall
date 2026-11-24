@@ -13,7 +13,7 @@ urlpatterns = [path("plugins/", include((plugin_patterns, "plugins")))]
 @pytest.mark.parametrize(
     ("model", "segment", "expected"),
     [
-        (models.Firewall, "firewalls", ("edit", "changelog")),
+        (models.Firewall, "firewalls", ("edit", "delete", "changelog")),
         (models.FirewallPolicy, "policies", ("edit", "delete", "changelog")),
         (models.AddressGroup, "groups", ("edit", "changelog")),
         (models.DriftEvent, "drift", ("changelog",)),

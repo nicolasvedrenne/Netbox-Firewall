@@ -34,6 +34,7 @@ class Firewall(JobsMixin, NetBoxModel):
     last_success = models.DateTimeField(null=True, editable=False)
     last_attempt = models.DateTimeField(null=True, editable=False)
     last_status = models.CharField(max_length=24, default="unknown", editable=False)
+    last_error = models.CharField(max_length=250, blank=True, editable=False)
     coverage = models.CharField(max_length=250, blank=True, editable=False)
 
     class Meta:

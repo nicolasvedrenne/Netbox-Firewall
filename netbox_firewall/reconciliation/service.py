@@ -380,18 +380,20 @@ def execute(driver, before, operations, run, identities, verify_intent):
 
 def safely_sync(firewall, logger, *, deploy=False, plan_only=False, actor=None):
     firewall.last_attempt = timezone.now()
-    firewall.save(update_fields=("last_attempt",))
+    firewall.last_error = ""
+    firewall.save(update_fields=("last_attempt", "last_error"))
     try:
         return synchronize(firewall, deploy=deploy, plan_only=plan_only, actor=actor)
     except Exception as exc:
         # Transport payloads, third-party exceptions and credentials stay out of job logs.
         firewall.last_status = "error"
-        firewall.save(update_fields=("last_status",))
         reason = (
-            "Firewall operation failed or inventory was incomplete."
-            if isinstance(exc, FirewallError)
+            str(exc)
+            if isinstance(exc, FirewallError) and str(exc)
             else "Unexpected synchronization failure."
         )
+        firewall.last_error = reason[:250]
+        firewall.save(update_fields=("last_status", "last_error"))
         record(firewall, {"collection": Finding("error", {"reason": reason})}, complete=False)
-        logger.warning("Firewall synchronization failed for firewall ID %s", firewall.pk)
+        logger.warning("Firewall synchronization failed for firewall ID %s: %s", firewall.pk, reason)
         return None
